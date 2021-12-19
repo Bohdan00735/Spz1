@@ -2,28 +2,25 @@ import pageTable.KernelPageTable
 
 class PageReplacement(val pageTable: KernelPageTable) {
     private val workingSetTime = HashMap<Int, Int>()
-    private val tTicks = 10 //after that time page remove from working set
+    private val tTicks = 1000 //after that time page remove from working set
 
-    fun addToWorkSet(vpn: Int){
+    fun addToWorkSet(vpn: Int, currentTick: Int){
         if (vpn !in workingSetTime.keys){
-            workingSetTime[vpn] = 0
+            workingSetTime[vpn] = currentTick
         }
     }
 
-    fun getLongestUnused(): Pair<Int, Int>? {
+    fun getLongestUnused(currentTick: Int): Pair<Int, Int> {
         var page = 0
         var time = 0
-        for (ppn in workingSetTime.keys){
-            val unusedTime = workingSetTime[ppn]!! - System.currentTimeMillis()
+        for (vpn in workingSetTime.keys){
+            val unusedTime = currentTick - workingSetTime[vpn]!!
             if (unusedTime > time){
-                page = ppn
-                time = unusedTime.toInt()
+                page = vpn
+                time = unusedTime
             }
         }
-        if (time!=0){
-            return Pair(page,time)
-        }
-        return null
+        return Pair(page,time)
     }
 
     //make each m milliseconds
@@ -32,7 +29,7 @@ class PageReplacement(val pageTable: KernelPageTable) {
             if (pageTable.checkAccessToPage(vpn)){
                 workingSetTime[vpn] = currentTick
             }else{
-                if (workingSetTime[vpn]!! - currentTick > tTicks){
+                if (currentTick - workingSetTime[vpn]!!  > tTicks){
                     workingSetTime.remove(vpn)
                 }
             }
@@ -41,5 +38,9 @@ class PageReplacement(val pageTable: KernelPageTable) {
 
     fun getWorkGroup(): MutableSet<Int> {
         return workingSetTime.keys
+    }
+
+    fun removePage(victimPage: Int) {
+        workingSetTime.remove(victimPage)
     }
 }

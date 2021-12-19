@@ -8,18 +8,23 @@ class MMU() {
         return client
     }
 
-    fun getNewPage(): Int {
+    fun getNewPage(currentTick: Int): Int {
 
         val victimPages = lookForFree()
         val victimPage = if (victimPages.isEmpty()){
-            findMostWaiting().first
+            findMostWaiting(currentTick).first
         }else{
             victimPages.first()
         }
         println("victim page found $victimPage")
         saveToFS(victimPage)
         clearInTables(victimPage)
+        loadFromFs()
         return victimPage
+    }
+
+    private fun loadFromFs() {
+        //get data from file System
     }
 
     private fun clearInTables(victimPage: Int) {
@@ -33,10 +38,10 @@ class MMU() {
         //get data from physical page and write it to file system
     }
 
-    private fun findMostWaiting(): Pair<Int, Int> {
+    private fun findMostWaiting(currentTick: Int): Pair<Int, Int> {
         var page = Pair(0,0)
         for (clientMMU in clients){
-            val clientPage = clientMMU.getVictimPage() ?: continue
+            val clientPage = clientMMU.getVictimPage(currentTick)
             if (page.second < clientPage.second){
                 page = clientPage
             }
@@ -44,10 +49,12 @@ class MMU() {
         return page
     }
 
-    private fun lookForFree(): HashSet<Int> {
-        val freeSet = HashSet<Int>()
+    private fun lookForFree(): Set<Int> {
+        var freeSet = clients.first().getFreeAddresses()
         for (clientMMU in clients){
-            freeSet.addAll(clientMMU.getFreeAddresses())
+
+            freeSet = freeSet.intersect(clientMMU.getFreeAddresses())
+
         }
         return freeSet
     }
